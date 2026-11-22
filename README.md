@@ -1,6 +1,6 @@
 # RGB Tracking & explainability through ResNet-50 + LSTM + ReX vs. Event Pictures
 
-An end-to-end 3-stage study on a stratified **100-sequence subset of the FEOT dataset (`FEOT_100`, 18,526 pixel-aligned RGB + Event frames)**:
+A 3-stage test on a selected **100-sequence subset of the FEOT dataset (`FEOT_100`, 18,526 pixel-aligned RGB + Event frames)**:
 1. **Stage 1 (`src/train_cnn.py`)**: fine-tune an ImageNet-pretrained **ResNet-50** spatial tracker on FEOT
 2. **Stage 2 (`src/train_lstm.py`)**: Attach a 2layer **Temporal LSTM** with visibility-gated visual-motion fusion on top of frozen ResNet-50 CNN & train on temporal clips with synthetic  occluders.
 3. **Stage 3 (`src/run_rex_eval.py` & `src/compare_rex_stage1_vs_stage2.py`)**: Use **ReX** to compute causal responsibility maps on unseen test RGB frames (with LSTM hidden state) and compare them with FEOT's pixel-aligned **event-camera pictures** across all occlusion.
@@ -52,7 +52,7 @@ The exact sequence lists and metadata are tracked in `data/FEOT_100/` (`train_li
 
 ---
 
-### 3. Controlled Ablation: Stage-1 (CNN Only) vs. Stage-2 (CNN + LSTM) ReX Maps (40 Identical Frames)
+### 3. comparison: Stage-1 (CNN Only) vs. Stage-2 (CNN + LSTM) ReX Maps (40 Identical Frames)
 
 | Regime | Frames | ReX(S1) vs. ReX(S2) CC | NSS (`S1 → S2`) | All-Event AUC (`S1 → S2`) | Target-Event AUC (`S1 → S2`) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
