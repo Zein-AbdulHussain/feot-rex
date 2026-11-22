@@ -1,4 +1,4 @@
-# FEOT RGB Tracking & Causal Explainability (ResNet-50 + LSTM + ReX vs. Event Pictures)
+# RGB Tracking & explainability through ResNet-50 + LSTM + ReX vs. Event Pictures
 
 An end-to-end 3-stage study on a stratified **100-sequence subset of the FEOT dataset (`FEOT_100`, 18,526 pixel-aligned RGB + Event frames)**:
 1. **Stage 1 (`src/train_cnn.py`)**: Fine-tune an ImageNet-pretrained **ResNet-50** spatial tracker (`ResNet50TrackerCNN`) on FEOT RGB frames (`frame/`).
