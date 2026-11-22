@@ -64,7 +64,7 @@ The exact sequence lists and metadata are tracked in `data/FEOT_100/` (`train_li
 
 ![Stage-1 vs Stage-2 ReX Comparison](outputs/rex_compare/stage1_vs_stage2_rex_summary.png)
 
-- **Key Finding:** When targets are visible (`occ = 0`), CNN-only and CNN+LSTM produce nearly identical ReX maps (`S1–S2 CC = +0.882`) closely matching the event camera (`TargetEvt-AUC = 0.97`). Under full occlusion (`occ = 100`), `S1–S2 CC` drops to `+0.456`: CNN-only is forced to rely on noisy current-frame RGB pixels, whereas CNN+LSTM shifts causal reliance onto its temporal hidden state — boosting full-occlusion `Prec@20px` by **5.1×** while decoupling from unreliable current-frame RGB appearance.
+- **finding:** When targets are visible (`occ = 0`), CNN-only and CNN+LSTM produce nearly identical ReX maps (`S1–S2 CC = +0.882`) closely matching the event camera (`TargetEvt-AUC = 0.97`). Under full occlusion (`occ = 100`), `S1–S2 CC` drops to `+0.456`: CNN-only is forced to rely on noisy current-frame RGB pixels, whereas CNN+LSTM shifts causal reliance onto its temporal hidden state — boosting full-occlusion `Prec@20px` by **5.1×** while decoupling from unreliable current-frame RGB appearance.
 
 #### Sample Visual Panels
 ![Visible example](outputs/rex_eval/panels/occ_0_Sequence_000001_f0005.png)
