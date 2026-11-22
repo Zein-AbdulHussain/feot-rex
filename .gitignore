@@ -1,0 +1,15 @@
+# Virtual environment & caches
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Raw FEOT image sequences (16.5 GB) — keep split lists & metadata.tsv tracked
+data/FEOT_100/FEOT_dataset/
+
+# OS / IDE clutter
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
