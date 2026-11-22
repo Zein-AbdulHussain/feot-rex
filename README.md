@@ -53,29 +53,3 @@
 ![Visible example](outputs/rex_eval/panels/occ_0_Sequence_000001_f0005.png)
 ![Heavy occlusion example](outputs/rex_compare/panels/cmp_occ_50_90_Sequence_000082_f0005.png)
 ![Full occlusion example](outputs/rex_eval/panels/occ_100_Sequence_000098_f0025.png)
-
-## Structure
-
-```text
-checkpoints/   resnet50_cnn_best.pt, resnet50_lstm_best.pt
-data/FEOT_100/ train_list.txt, val_list.txt, test_list.txt, metadata.tsv
-outputs/       metrics JSONs, training curves, rex_eval/, rex_compare/
-src/           feot_dataset.py, losses.py, models.py, train_cnn.py, train_lstm.py,
-               run_rex_eval.py, compare_rex_stage1_vs_stage2.py
-```
-
-## Usage
-
-```bash
-pip install -r requirements.txt
-
-# Step 1 — resnet-50 CNN
-python src/train_cnn.py --epochs 20 --batch_size 48 --samples_per_epoch 4200
-
-# Step 2 — LSTM
-python src/train_lstm.py --epochs 35 --batch_size 32 --clip_len 24
-
-# Step 3 — ReX vs. event pictures
-python src/run_rex_eval.py --max_per_bucket 20 --rex_iters 20 --rex_batch 16
-python src/compare_rex_stage1_vs_stage2.py --max_per_bucket 10 --rex_iters 16 --rex_batch 16
-```
