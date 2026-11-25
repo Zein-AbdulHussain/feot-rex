@@ -1,6 +1,6 @@
 # RGB Classification & explainability through resnet-50 + ReX vs. Event Data
 
-1. **Step 1 (`src/train_classifier.py`)**: Fine-tune an imagenet-pretrained resnet-50 classifier on annotated FEOT RGB bounding-box crops (sequence-disjoint split, fully occluded frames excluded from training; sequence-level prediction = average of frame-level probabilities).
+1. **Step 1 (`src/train_classifier.py`, `src/eval_classifier_prf.py`)**: Fine-tune an imagenet-pretrained resnet-50 classifier on annotated FEOT RGB bounding-box crops (sequence-disjoint split, fully occluded frames excluded from training; sequence-level prediction = average of frame-level probabilities).
 2. **Step 2 (`src/run_rex_mps.py`)**: Center fixed raw event windows (`10 ms`, `20 ms`, `40 ms`) from `aligned_event.h5` around each RGB frame timestamp inside the native crop pixel grid.
 3. **Step 3 (`src/run_rex_mps.py`)**: Run ReX per frame on up to 10 unoccluded (`occ = 0`), correctly classified frames per test sequence to extract the binary Minimal Sufficient Pixel Set (MPS).
 4. **Step 4 (`src/run_rex_mps.py`)**: Score MPS vs. raw event counts with Event Recall, Fold Enrichment, and Pixel AUC (averaged within each sequence first, then across sequences).
@@ -13,10 +13,14 @@
 
 ### Step 1: resnet-50 GT-Box Category Classifier
 
-| Split | Sequences | Frame Acc (`occ < 100`) | Unoccluded Acc (`occ = 0`) | Sequence Acc (Avg Frame Probs) |
-| :--- | :---: | :---: | :---: | :---: |
-| **Val** | 10 | `75.7%` (1,890 frames) | `90.9%` (909 frames) | `80.0%` (8/10) |
-| **Test** | 20 | **`89.5%`** (3,593 frames) | **`98.3%`** (1,973 frames) | **`90.0%`** (18/20) |
+| Split & Evaluation Level | Accuracy | Macro P / R / F1 | Weighted P / R / F1 |
+| :--- | :---: | :---: | :---: |
+| **Val — Frame (`occ < 100`, 1,890)** | `75.7%` | `66.1% / 65.6% / 65.0%` | `78.0% / 75.7% / 75.8%` |
+| **Val — Unoccluded (`occ = 0`, 909)** | `90.9%` | `74.6% / 90.5% / 69.8%` | `98.5% / 90.9% / 93.9%` |
+| **Val — Sequence (avg probs, 10 seqs)** | `80.0%` | `73.3% / 70.0% / 69.3%` | `83.3% / 80.0% / 79.3%` |
+| **Test — Frame (`occ < 100`, 3,593)** | **`89.5%`** | **`93.6% / 83.4% / 84.6%`** | **`91.2% / 89.5% / 89.0%`** |
+| **Test — Unoccluded (`occ = 0`, 1,973)** | **`98.2%`** | **`99.1% / 95.6% / 97.2%`** | **`98.3% / 98.2% / 98.2%`** |
+| **Test — Sequence (avg probs, 20 seqs)** | **`90.0%`** | **`87.0% / 85.2% / 85.7%`** | **`90.8% / 90.0% / 89.7%`** |
 
 ![Classifier Curves](outputs/rex_mps/classifier_curves.png)
 
@@ -40,3 +44,4 @@
 ![Walking person example](outputs/rex_mps/panels/mps_Sequence_000001_f0000.png)
 ![Moving toy car example](outputs/rex_mps/panels/mps_Sequence_000236_f0001.png)
 ![Complementary cues example](outputs/rex_mps/panels/mps_Sequence_000330_f0000.png)
+![Outlier example Sequence_000082](outputs/rex_mps/panels/mps_Sequence_000082_f0101.png)
