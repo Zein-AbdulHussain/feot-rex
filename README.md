@@ -1,55 +1,42 @@
-# RGB Tracking & explainability through resnet-50 + LSTM + ReX vs. Event Pictures
+# RGB Classification & explainability through resnet-50 + ReX vs. Event Data
 
-1. **Step 1 (`src/train_cnn.py`)**: Fine-tune an imagenet-pretrained resnet-50 tracker on FEOT RGB frames.
-2. **Step 2 (`src/train_lstm.py`)**: Attach a 2-layer LSTM on top of the frozen resnet-50 backbone.
-3. **Step 3 (`src/run_rex_eval.py`, `src/compare_rex_stage1_vs_stage2.py`)**: Compute ReX responsibility maps on test RGB frames and compare them with FEOT event pictures.
+1. **Step 1 (`src/train_classifier.py`)**: Fine-tune an imagenet-pretrained resnet-50 classifier on annotated FEOT RGB bounding-box crops (sequence-disjoint split, fully occluded frames excluded from training; sequence-level prediction = average of frame-level probabilities).
+2. **Step 2 (`src/run_rex_mps.py`)**: Center fixed raw event windows (`10 ms`, `20 ms`, `40 ms`) from `aligned_event.h5` around each RGB frame timestamp inside the native crop pixel grid.
+3. **Step 3 (`src/run_rex_mps.py`)**: Run ReX per frame on up to 10 unoccluded (`occ = 0`), correctly classified frames per test sequence to extract the binary Minimal Sufficient Pixel Set (MPS).
+4. **Step 4 (`src/run_rex_mps.py`)**: Score MPS vs. raw event counts with Event Recall, Fold Enrichment, and Pixel AUC (averaged within each sequence first, then across sequences).
 
 ## Dataset
 
-100-sequence subset (70 train / 10 val / 20 test, 18,526 frames) from [`DongHappyyy/FEOT`](https://huggingface.co/datasets/DongHappyyy/FEOT) ([feot-dataset.github.io](https://feot-dataset.github.io/)). Sequence lists are in `data/FEOT_100/`.
+100-sequence subset (`70 train / 10 val / 20 test`, `18,526` frames across 10 categories) from [`DongHappyyy/FEOT`](https://huggingface.co/datasets/DongHappyyy/FEOT) ([feot-dataset.github.io](https://feot-dataset.github.io/)), plus raw microsecond-aligned `aligned_event.h5` streams for all 20 test sequences (`352.7M` events). Sequence lists are in `data/FEOT_100/`.
 
 ## Results
 
-### Step 1 (resnet-50) vs. Step 2 (resnet-50 + LSTM) — Test Split (20 seqs, 3,874 frames)
+### Step 1: resnet-50 GT-Box Category Classifier
 
-| Occlusion | Frames | Step 1 IoU | Step 2 IoU | Step 1 Prec@20px | Step 2 Prec@20px |
+| Split | Sequences | Frame Acc (`occ < 100`) | Unoccluded Acc (`occ = 0`) | Sequence Acc (Avg Frame Probs) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Val** | 10 | `75.7%` (1,890 frames) | `90.9%` (909 frames) | `80.0%` (8/10) |
+| **Test** | 20 | **`89.5%`** (3,593 frames) | **`98.3%`** (1,973 frames) | **`90.0%`** (18/20) |
+
+![Classifier Curves](outputs/rex_mps/classifier_curves.png)
+
+### Steps 2–4: ReX MPS vs. Centered Event Windows
+
+- **Exclusions:** `20` test sequences (`3,874` frames) → `5` sequences (`1,901` frames) excluded with no `occ = 0` frames → `1` sequence (`35` frames) excluded with no correctly classified `occ = 0` frames → `14` test sequences (`134` sampled frames, `0` degenerate MPS masks, `1` low-event frame `< 20` events skipped at `10 ms` and `20 ms`).
+- **Overlap Metrics** (within-sequence mean → across-sequence mean over `14` sequences; one-sided Wilcoxon signed-rank `p`-values vs. random chance):
+
+| Event Window | Scored (Seqs / Frames) | Mean MPS Area | Event Recall | Fold Enrichment (`1.0x` = chance) | Pixel AUC (`0.50` = chance) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Overall** | 3,874 | `0.4029` | `0.3908` | `56.7%` | **`57.0%`** |
-| `occ = 0` | 1,973 | `0.6092` | **`0.6123`** | `83.6%` | `83.2%` |
-| `occ 10–40` | 1,063 | `0.2757` | `0.2297` | `40.5%` | `37.0%` |
-| `occ 50–90` | 557 | `0.1082` | `0.0874` | `19.4%` | **`23.9%`** |
-| `occ = 100` | 281 | `0.0202` | **`0.0461`** | `2.8%` | **`14.6%`** |
+| **`10 ms`** (`±5 ms`) | 14 / 133 | `23.0%` | `31.0% ± 14.8%` | **`1.43x ± 0.37`** (`p = 0.0006`) | **`0.571 ± 0.068`** (`p = 0.0020`) |
+| **`20 ms`** (`±10 ms`) | 14 / 133 | `23.0%` | `30.9% ± 14.9%` | **`1.41x ± 0.37`** (`p = 0.0006`) | **`0.586 ± 0.077`** (`p = 0.0006`) |
+| **`40 ms`** (`±20 ms`) | 14 / 134 | `23.1%` | `31.4% ± 15.4%` | **`1.42x ± 0.35`** (`p = 0.0006`) | **`0.607 ± 0.085`** (`p = 0.0006`) |
 
-| Step 1 (resnet-50) | Step 2 (LSTM) |
-| :---: | :---: |
-| ![Step 1 Curves](outputs/stage1_cnn_curves.png) | ![Step 2 Curves](outputs/stage2_lstm_curves.png) |
+`12 / 14` test sequences exceed random chance on both Fold Enrichment (`> 1.0x`) and Pixel AUC (`> 0.50`).
 
-### Step 3: ReX vs. Event Pictures (80 Test Frames)
-
-| Occlusion | Frames | NSS | ROC-AUC (All) | ROC-AUC (Target) | CC | SIM | Top-20% IoU | ReX / Evt in GT |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Overall** | 80 | `+0.956` | `0.690` | `0.890` | `+0.356` | `0.463` | `0.219` | `5.4%` / `23.0%` |
-| `occ = 0` | 20 | `+1.558` | `0.769` | `0.985` | `+0.470` | `0.409` | `0.221` | `7.2%` / `42.0%` |
-| `occ 10–40` | 20 | `+0.867` | `0.649` | `0.898` | `+0.333` | `0.452` | `0.191` | `4.3%` / `19.7%` |
-| `occ 50–90` | 20 | `+0.873` | `0.688` | `0.918` | `+0.369` | `0.467` | `0.217` | `4.8%` / `18.5%` |
-| `occ = 100` | 20 | `+0.528` | `0.652` | `0.759` | `+0.250` | `0.526` | `0.247` | `5.5%` / `11.8%` |
-
-![ReX vs. Event Alignment](outputs/rex_eval/rex_alignment_summary.png)
-
-### Comparison: Step 1 (CNN) vs. Step 2 (CNN + LSTM) ReX Maps (40 Identical Frames)
-
-| Occlusion | Frames | Step1–Step2 CC | NSS (S1 → S2) | All-Event AUC (S1 → S2) | Target-Event AUC (S1 → S2) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Overall** | 40 | `+0.730` | `+0.73 → +0.70` | `0.667 → 0.658` | `0.931 → 0.869` |
-| `occ = 0` | 10 | `+0.882` | `+1.17 → +1.17` | `0.717 → 0.717` | `0.971 → 0.966` |
-| `occ 10–40` | 10 | `+0.764` | `+0.61 → +0.54` | `0.642 → 0.621` | `0.983 → 0.886` |
-| `occ 50–90` | 10 | `+0.818` | `+0.65 → +0.70` | `0.659 → 0.674` | `0.961 → 0.946` |
-| `occ = 100` | 10 | `+0.456` | `+0.49 → +0.40` | `0.650 → 0.620` | `0.808 → 0.678` |
-
-![Step 1 vs Step 2 ReX Comparison](outputs/rex_compare/stage1_vs_stage2_rex_summary.png)
+![Window Comparison](outputs/rex_mps/window_comparison.png)
 
 ### Sample Panels
 
-![Visible example](outputs/rex_eval/panels/occ_0_Sequence_000001_f0005.png)
-![Heavy occlusion example](outputs/rex_compare/panels/cmp_occ_50_90_Sequence_000082_f0005.png)
-![Full occlusion example](outputs/rex_eval/panels/occ_100_Sequence_000098_f0025.png)
+![Walking person example](outputs/rex_mps/panels/mps_Sequence_000001_f0000.png)
+![Moving toy car example](outputs/rex_mps/panels/mps_Sequence_000236_f0001.png)
+![Complementary cues example](outputs/rex_mps/panels/mps_Sequence_000330_f0000.png)

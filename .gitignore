@@ -13,3 +13,9 @@ data/FEOT_100/FEOT_dataset/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local presentation docs & unused experiments
+*.docx
+*.pptx
+src/run_gradcam_eval.py
+outputs/gradcam_eval/
